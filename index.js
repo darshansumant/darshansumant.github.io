@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   Promise.all([
     'https://raw.githubusercontent.com/ResidentMario/geoplot-data/master/contiguous-usa.geojson'
     ,'./data/yoy_del_rates_state.json'
+    ,'./data/yoy_npa_rates_state.json'
   ].map(url => fetch(url)
     // convert to JSON & send to Chloropleth function
     .then(data => data.json())))
@@ -34,9 +35,9 @@ function computeDomain(data, key) {
 // Using the function structure similar to that provided by Andrew
 function myVis(data) {
 
-  const [stateShapes, stateDel] = data;
+  const [stateShapes, stateDel, stateNPA] = data;
   const width = 1000;
-  const height = 550;
+  const height = 1100;
   const margin = {
     top: 10,
     left: 10,
@@ -52,6 +53,15 @@ function myVis(data) {
     acc[row.Name] = row.mean_del;
     return acc;
   }, {});
+
+  // NPA Rates by State
+  const stateNameToNPA = stateNPA.reduce((acc, row) => {
+    acc[row.Name] = row.mean_npa;
+    return acc;
+  }, {});
+
+  // Color Scales
+  // using same scale for Delinquency & NPA rates on purpose for easy comparison
   const delScale = d3.scaleLinear().domain([0, delDomain.max]).range([0, 1]);
   const colorScale = d => d3.interpolateViridis(delScale(d));  // linear interploation, not using sqrt
 
@@ -59,14 +69,15 @@ function myVis(data) {
   const projection = d3.geoAlbersUsa();
   const geoGenerator = d3.geoPath(projection);
   // container for the visualization
-  const svg = d3.select('.vis-container')
+  const chart1 = d3.select('.vis-container')
     .attr('width', width)
     .attr('height', height)
     .append('g')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
+      .attr('transform', `translate(${margin.left},${margin.top})`)
+      .attr('class', 'delinquency');
 
   // construct the rendered states
-  svg.selectAll('.state')
+  chart1.selectAll('.state')
     .data(stateShapes.features)
     .enter()
     .append('path')
@@ -74,5 +85,42 @@ function myVis(data) {
       .attr('stroke', 'black')
       .attr('fill', d => colorScale(stateNameToDel[d.properties.State]))
       .attr('d', d => geoGenerator(d));
+
+  const chart2 = d3.select('.vis-container')
+    .append('g')
+      .attr('transform', "translate(" + margin.left + "," + 560 + ")")
+      .attr('class', 'npa');
+
+  // construct the rendered states
+  chart2.selectAll('.state')
+    .data(stateShapes.features)
+    .enter()
+    .append('path')
+      .attr('class', 'state')
+      .attr('stroke', 'black')
+      .attr('fill', d => colorScale(stateNameToNPA[d.properties.State]))
+        .attr('d', d => geoGenerator(d));
+
+  // Graph Title (Chart 1)
+  const title1 = chart1.append("text")
+    .attr("class", "title1")
+    .attr("x", 0.5*width)
+    .attr("y", 0.5*margin.top)
+    .text("Mortgage Delinquency (30-90 days overdue) by State (2017)")
+    .attr("text-anchor", "middle")
+    .attr("font-size", 20)
+    .attr("font-family", "sans-serif")
+    .attr("fill", "navy");
+
+  // Graph Title (Chart 2)
+  const title2 = chart2.append("text")
+    .attr("class", "title1")
+    .attr("x", 0.5*width)
+    .attr("y", 0.5*margin.top)
+    .text("Mortgage NPA (90+ days overdue) by State (2017)")
+    .attr("text-anchor", "middle")
+    .attr("font-size", 20)
+    .attr("font-family", "sans-serif")
+    .attr("fill", "navy");
 
 }
