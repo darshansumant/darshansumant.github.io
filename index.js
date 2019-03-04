@@ -1,5 +1,13 @@
+/*
+Name: index.js
+Author: Darshan Sumant (cnet: darshansumant)
+Reference: 1) Andrew's TA & d3 workshop materials
+           2) d3 documentation on color scales
+           3) geoplot repository - https://github.com/ResidentMario/geoplot-data
+*/
+
 document.addEventListener("DOMContentLoaded", () => {
-  // this uses a structure called a promise to asyncronously get the cars data set
+  // Promise structure same as example_scaffold shared by Andrew
   Promise.all([
     'https://raw.githubusercontent.com/ResidentMario/geoplot-data/master/contiguous-usa.geojson'
     ,'./data/yoy_del_rates_state.json'
@@ -13,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 });
 
-
+// function to extract domain from data provided
 function computeDomain(data, key) {
   return data.reduce((acc, row) => {
     return {
@@ -23,9 +31,9 @@ function computeDomain(data, key) {
   }, {min: Infinity, max: -Infinity});
 }
 
+// Using the function structure similar to that provided by Andrew
 function myVis(data) {
-  // this is an es6ism called a destructuring, it allows you to save and name argument
-  // you tend to see it for stuff in object, (as opposed to arrays), but this is cool too
+
   const [stateShapes, stateDel] = data;
   const width = 1000;
   const height = 550;
@@ -35,11 +43,9 @@ function myVis(data) {
     right: 10,
     bottom: 10
   };
-  // we're going to be coloring our cells based on their population so we should compute the
-  // population domain
+
+  // color defined as per delinquency domain
   const delDomain = computeDomain(stateDel, 'mean_del');
-  // the data that we will be iterating over will be the geojson array of states, so we want to be
-  // able to access the populations of all of the states. to do so we flip it to a object representation
 
   // Delinquency Rates by State
   const stateNameToDel = stateDel.reduce((acc, row) => {
@@ -49,17 +55,17 @@ function myVis(data) {
   const delScale = d3.scaleLinear().domain([0, delDomain.max]).range([0, 1]);
   const colorScale = d => d3.interpolateViridis(delScale(d));  // linear interploation, not using sqrt
 
-  // next we set up our projection stuff
+  // Projection (same as workshop exercise)
   const projection = d3.geoAlbersUsa();
   const geoGenerator = d3.geoPath(projection);
-  // then our container as usual
+  // container for the visualization
   const svg = d3.select('.vis-container')
     .attr('width', width)
     .attr('height', height)
     .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-  // finally we construct our rendered states
+  // construct the rendered states
   svg.selectAll('.state')
     .data(stateShapes.features)
     .enter()
